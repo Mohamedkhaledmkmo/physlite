@@ -17,7 +17,8 @@ struct circle
     int centerX = 0;
     int centerY = 0;
     int radius = 5;
-    int velcoity = 0;
+    double velcoity = 0;
+    bool direction = 1;
     Color color = RAYWHITE;
 };
 
@@ -52,6 +53,7 @@ void drawFrame(frame f,
 }
 
 void control(frame f, int &x, int &y)
+
 {
     if (IsKeyDown(KEY_UP) && y >= 25)
         y -= 10;
@@ -63,56 +65,43 @@ void control(frame f, int &x, int &y)
         x -= 10;
 }
 
-void gravity(circle &c, double &rawTime, bool &toggleGravity)
-{
-    int yo = c.centerY;
-    int vo = c.velcoity;
+void gravity(circle &c, bool &toggleGravity)
+
+{   
+    const float g = 980.0;
+    const float restitution  = 0.7;
+    
+    cout << c.velcoity << endl ;
     if (IsKeyPressed(KEY_SPACE))
     {
         toggleGravity = !toggleGravity;
         c.velcoity = 0;
-        vo = c.velcoity;
-        rawTime = GetTime();
     }
 
-    if (toggleGravity)
-    {
-        double time = GetTime() - rawTime;
-        c.velcoity = vo + 9.8 * time;
-        c.centerY = vo * time + yo + 0.5 * 9.8 * time * time;
-        if (c.centerY > 600 - 30 - 10)
+    if (!toggleGravity) return;
+    
+        double deltaTime = GetFrameTime() ;
+        
+        c.velcoity += g * deltaTime;
+        c.centerY += c.velcoity * deltaTime;
+        
+       
+        if (c.centerY > 600 - c.radius - 10)
         {
             c.centerY = 600 - c.radius - 10;
+            c.velcoity = -restitution * c.velcoity;
         }
-    }
+    
 }
 
-char *calcTime(int nframes)
-{
-    int time = (int)GetTime();
-    string vtime = to_string(time);
-    char *s = new char[4];
-    *s = {0};
-    *(s + 1) = {0};
-    *(s + 2) = {0};
-    *(s + 3) = {0};
 
-    s[0] = vtime[0];
-    if (time > 9)
-        s[1] = vtime[1];
-    if (time > 99)
-        s[2] = vtime[2];
-    if (time > 999)
-        s[3] = vtime[3];
-    return s;
-}
 int main()
 {
 
     int width = 800;
     int height = 600;
     InitWindow(width, height, "engine");
-    double rawTime = GetTime();
+    int time = 0;
     frame f;
     circle c;
     c.centerX = 400;
@@ -129,10 +118,10 @@ int main()
         ClearBackground(BLACK);
         drawFrame(f);
         control(f, c.centerX, c.centerY);
-        gravity(c, rawTime , toggleGravity);
+        gravity(c , toggleGravity);
         DrawCircle(c.centerX, c.centerY, c.radius, c.color);
-        char *timee = calcTime(nframes);
-        DrawText(timee, 10, 10, 20, RAYWHITE);
+        time = GetTime();
+        DrawText(TextFormat("time: %i",time), 10 ,10 , 20 , RAYWHITE);
         EndDrawing();
         nframes++;
     }
